@@ -636,10 +636,36 @@ class RDocStoreTest < XrefTestCase
 
   def test_page
     page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
+    @store.add_file 'pages/PAGE.md', parser: RDoc::Parser::Simple
 
     assert_nil @store.page 'no such page'
 
     assert_equal page, @store.page('PAGE')
+  end
+
+  def test_page_index
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
+    page_name_calls = 0
+    page.define_singleton_method(:page_name) do
+      page_name_calls += 1
+      super()
+    end
+
+    2.times { assert_equal page, @store.page('PAGE') }
+
+    assert_equal 1, page_name_calls
+  end
+
+  def test_page_index_invalidated_when_files_change
+    assert_nil @store.page('PAGE')
+
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
+
+    assert_equal page, @store.page('PAGE')
+
+    @store.remove_file 'PAGE.txt'
+
+    assert_nil @store.page('PAGE')
   end
 
   def test_page_with_extension
